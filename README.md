@@ -1,3 +1,6 @@
 # Minimalistic-Notes-App
-A minimalistic notes app to learn CRUD, made using Vanilla JS along with Node and Express
-Made the create, update and delete features along with animation
+A minimalistic notes app to learn CRUD
+TECH STACK:
+  frontend: Vanilla JS, Tailwind CDN, HTML
+  backend: Node + Express 
+  storage: JSON array in users local machine

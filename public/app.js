@@ -2,14 +2,20 @@
 const main = document.getElementById('home');
 const create = document.getElementById('create');
 const view = document.getElementById('view');
+const edit = document.getElementById('edit');
 
 const createBtn = document.getElementById('createBtn');
 const viewBtn = document.getElementById('viewBtn');
 const viewNoteLoader = document.getElementById('viewNoteLoader');
 
 const saveBtn = document.getElementById('saveBtn');
+const editSaveBtn = document.getElementById('editSaveBtn');
 const backBtn = document.getElementById('backBtn');
 const viewBackBtn = document.getElementById('viewBackBtn');
+const editCancelBtn = document.getElementById('editCancelBtn');
+
+const editTitle = document.getElementById('editTitle');
+const editTextSpace = document.getElementById('editTextSpace');
 
 //------------------------------------------------------------------------------------------------------------------
 
@@ -54,6 +60,7 @@ async function renderNotes() {
         li.className = "transition ease-in-out duration-150 grid grid-cols-12 space-x-2 px-6 text-xl";
 
         const span1 = document.createElement('span');
+        span1.dataset.id = note.id;
         const img1 = document.createElement('img');
         img1.src = './assets/edit.svg';
         img1.className = 'mx-auto'
@@ -80,6 +87,18 @@ async function renderNotes() {
         viewNoteLoader.classList.add('hidden');
         ul.classList.remove('hidden');
     }, 400);
+}
+
+async function fillNote(id){
+    const response = await fetch('/api/notes');
+    const notes = await response.json();
+
+    notes.forEach((note) => {
+        if(note.id == id){
+            editTitle.value = note.title;
+            editTextSpace.value = note.noteBody;
+        }
+    })
 }
 
 function createNote(animate = false) {
@@ -118,10 +137,31 @@ async function deleteNotes(id, li) {
     }
 }
 
+function editNote(animate = false, id){
+    fillNote(id);
+
+    main.classList.add('hidden');
+    create.classList.add('hidden');
+    view.classList.add('hidden');
+    edit.classList.remove('hidden');
+
+    if (animate) {
+        edit.classList.remove('opacity-100', 'scale-100');
+        edit.classList.add('opacity-0', 'scale-50');
+        animateIn(edit);
+    }
+    else {
+        edit.classList.remove('opacity-0', 'scale-50');
+        edit.classList.add('opacity-100', 'scale-100');
+    }
+
+}
+
 //route handler function
 function handleRoute(path) {
     if (path === '/create') createNote(false);
     else if (path === '/view') viewNotes(false);
+    else if (path === '/edit') editNote(false, id);
     else goHome();
 }
 
@@ -188,7 +228,42 @@ ul.addEventListener("click", (e) => {
     const editBtn = e.target.closest('.edit-btn');
     const li = e.target.closest('li');
     if (deleteBtn) deleteNotes(deleteBtn.dataset.id, li);
+    if (editBtn) {
+        history.pushState({ page: 'edit' }, '', `/edit/${editBtn.dataset.id}`);
+        editNote(true, editBtn.dataset.id);
+    }
 })
+
+editSaveBtn.addEventListener("click", async () => {
+    try {
+        const pathPart = window.location.pathname.split('/');
+        const urlID = +pathPart[pathPart.length - 1];
+
+        const response = await fetch(`/api/notes/${urlID}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: editTitle.value, noteBody: editTextSpace.value })
+        })
+
+        if (response.ok) {
+            animateOut(edit, () => {
+                history.back();
+                alert("Note updated successfully");
+            })
+        } else {
+            const errorMsg = await response.text();
+            alert("Error while saving note");
+            console.log(`Error: ${errorMsg}`);
+        }
+    } catch (error) {
+        console.error("error:", error);
+        alert('Error! Not able to save!');
+    }
+})
+
+editCancelBtn.addEventListener("click", () => animateOut(edit, () => {
+    history.back();
+}))
 
 //------------------------------------------------------------------------------------------------------------------
 
